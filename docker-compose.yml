@@ -1,0 +1,97 @@
+version: '3'
+
+# networks:
+#   app_net:
+#     ipam:
+#       driver: default
+#       config:
+#         - subnet: "172.16.238.0/24"
+
+services:
+  master:
+    # container_name: weed-master
+    image: chrislusf/seaweedfs:2.85
+    ports:
+      - "9333:9333"
+      - 19333:19333
+    volumes:
+      - ./data:/data:rw
+      - ./security.toml:/etc/seaweedfs/security.toml:rw
+    privileged: true
+    # networks:
+    #   app_net:
+    #     ipv4_address: 172.16.238.10
+#        aliases:
+#          - master
+# 经测试 -ip=192.168.51.34 不能按照官方文档那样说的写成 -ip=master
+    command: master -ip=${MASTER_HOST} -port=9333 -volumeSizeLimitMB=30000 -defaultReplication=010
+
+  volume1:
+    # container_name: weed-volume1
+    image: chrislusf/seaweedfs:2.85
+    ports:
+      - 9381:9381
+      - 19381:19381
+      - 9324:9324
+    volumes:
+      - ./data1:/data:rw
+      - ./security.toml:/etc/seaweedfs/security.toml:rw
+    privileged: true
+    # networks:
+    #   app_net:
+    #     ipv4_address: 172.16.238.11
+#        aliases:
+#          - volume
+    command: volume -mserver=${MASTER_HOST}:9333 -ip=${VOLUME1_HOST} -port=9381 -max=100 -dataCenter=dc1 -rack=rack1 -metricsPort=9324
+    depends_on:
+      - weed-master
+
+  volume2:
+    # container_name: weed-volume2
+    image: chrislusf/seaweedfs:2.85
+    ports:
+      - 9382:9382
+      - 19382:19382
+      - 9325:9325
+    volumes:
+      - ./data2:/data:rw
+      - ./security.toml:/etc/seaweedfs/security.toml:rw
+    privileged: true
+    # networks:
+    #   app_net:
+    #     ipv4_address: 172.16.238.12
+#        aliases:
+#          - volume
+    command: volume -mserver=${MASTER_HOST}:9333 -ip=${VOLUME2_HOST} -port=9382 -max=100 -dataCenter=dc1 -rack=rack2 -metricsPort=9325
+    depends_on:
+      - weed-master
+
+  filer:
+    image: chrislusf/seaweedfs:2.85 # use a remote image
+    ports:
+      - 8888:8888
+      - 18888:18888
+      - 9326:9326
+    volumes:
+      - ./fdata:/data:rw
+      - ./security.toml:/etc/seaweedfs/security.toml:rw
+    command: 'filer -master="${MASTER_HOST}:9333" -ip=${FILER_HOST} -port=8888  -metricsPort=9326'
+    tty: true
+    stdin_open: true
+    depends_on:
+      - master
+      - volume1
+      - volume2
+
+  webdav:
+    image: chrislusf/seaweedfs:2.85 # use a remote image
+    ports:
+      - 7333:7333
+      - 17333:17333
+    volumes:
+      - ./webdav:/data:rw
+    command: webdav -port=7333 -filer=${FILER_HOST}:8888
+    depends_on:
+      - filer
+
+
