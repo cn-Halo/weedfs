@@ -1,3 +1,9 @@
+# seaweedfs docker部署方案
+
+# docs目录为对官方文档的摘要
+
+# cmd目录为利用weed命令编写的一键上传本地文件的脚本（特别是针对上传大文件）
+
 # 启动命令
 docker compose --env-file=my.env up -d
 

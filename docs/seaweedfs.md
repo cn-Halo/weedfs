@@ -1,3 +1,5 @@
+![SeaweedFS Architecture](https://raw.githubusercontent.com/chrislusf/seaweedfs/master/note/SeaweedFS_Architecture.png)
+
 # 文档
 
 ## 源码地址
@@ -361,6 +363,33 @@ http://192.168.50.105:9333/dir/status?pretty=y
 http://192.168.50.105:9333/dir/lookup?volumeId=3&pretty=y
 ```
 
+## Filer Server API
+
+- 上传文件。 filename不写的话，文件名就是真实的文件名，写了文件浏览器显示的就是指定的filename，path是指定的路径（不存在会自动创建），path后面要跟`/`，否则 path就会被认为是filename，文件会上传在根目录
+
+```sh
+# post
+http://192.168.50.105:8889/path/filename
+```
+
+- op=append 意思为：向filename文件末尾追加内容。应该是同样的文件格式追加才有意义
+
+```SH
+#POST
+http://192.168.50.105:8889/path/filename?op=append
+```
+
+
+
+- 查询某个文件夹下的文件列表。注意：请求头需要加上`accept: application/json`。否则，默认返回的是html
+
+```
+# get
+curl -H "Accept: application/json" "http://localhost:8888/javascript/?pretty=y"  
+```
+
+
+
 ## Configuration（配置）
 
 ### Replication（复制策略）
@@ -637,3 +666,6 @@ weed volume -whiteList="::1,127.0.0.1"
 ./weed upload -master=192.168.50.105:9333 -dir=/Users/yuzhiming/Downloads/nginx-1.20.2 -collection=uploadByMacTest -ttl=1y > ./$(date "+%Y%m%d-%H%M%S").log
 ```
 
+## 通过weed upload命令批量上传文件设置了collection，但是weedfs master没有提供根据collection查找fid的api
+
+- 在批量上传完成之后，将保存fid的日志文件也上传，最终持久化保存一个日志文件fid
