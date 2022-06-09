@@ -1,0 +1,5 @@
+# 启动命令
+docker compose --env-file=my.env up -d
+
+# 停止命令
+docker compose down
